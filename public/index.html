@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent City</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="city" aria-label="Isometric city where each building is an AI agent"></canvas>
+
+  <header class="intro">
+    <h1>Agent City</h1>
+    <p>Your AI agents at work. Select a building to talk to its agent.</p>
+    <nav class="agent-buttons" id="agent-buttons" aria-label="Agents"></nav>
+  </header>
+
+  <section class="counters" aria-live="polite">
+    <p><strong id="count-agents">0</strong> agents working</p>
+    <p><strong id="count-tasks">0</strong> tasks finished</p>
+  </section>
+
+  <section class="feed" aria-label="Live activity">
+    <h2>Live activity</h2>
+    <ul id="feed-list"></ul>
+  </section>
+
+  <aside id="panel" class="panel" hidden aria-labelledby="panel-title">
+    <button class="close" type="button" aria-label="Close">&times;</button>
+    <p class="place"></p>
+    <h2 id="panel-title"></h2>
+    <p class="desc"></p>
+    <p class="status"><span class="dot"></span><span class="status-text"></span></p>
+    <p class="now" hidden></p>
+    <dl class="stats"></dl>
+    <p class="note" hidden></p>
+    <div class="actions">
+      <a class="btn primary" data-kind="teamsUrl" target="_blank" rel="noopener">Open in Teams</a>
+      <a class="btn" data-kind="copilotUrl" target="_blank" rel="noopener">Open in Copilot</a>
+    </div>
+    <p class="hint" hidden>Add teamsUrl and copilotUrl in public/config.js to turn on these buttons.</p>
+  </aside>
+
+  <script src="config.js"></script>
+  <script src="city.js"></script>
+</body>
+</html>
