@@ -164,11 +164,55 @@
   ];
   people.forEach((p) => (p.waitTotal = p.wait));
 
+  // ---------- LIVE activity: real questions asked in Teams / Copilot ----------
+  const visitors = [];          // holographic visitors beamed in front of a building
+  const liveUntil = {};         // agent id -> time until which its building pulses
+  let lastEventId = null;
+  const AGENT_TASK = {
+    hospital: "Answering a patient question", tower: "Answering a property question",
+    cloudascent: "Explaining a sales drop", finance_analyst: "Analysing an uploaded file",
+    financial_planning: "Updating a forecast", ap_control: "Checking supplier invoices",
+    finance_insights: "Answering a finance question", collections: "Reviewing overdue accounts",
+    expense_compliance: "Checking an expense claim"
+  };
+  function onLiveEvent(e) {
+    const b = buildings.find((x) => x.agent === e.agent);
+    const a = CFG.agents[e.agent];
+    if (!b || !a) return;
+    liveUntil[e.agent] = time + 8;
+    visitors.push({ agent: e.agent, i: b.i + b.w / 2, j: b.j + b.d + 0.45, born: time, life: 8, channel: e.channel });
+    // the agent's own worker (if it has one) stops and handles the request
+    const worker = people.find((p) => p.agent === e.agent);
+    const task = AGENT_TASK[e.agent] || "Answering a question";
+    if (worker) { worker.task = task; worker.wait = worker.waitTotal = 6; worker.live = true; }
+    tasksDone++;
+    document.getElementById("count-tasks").textContent = tasksDone;
+    feed.unshift({
+      name: a.label, color: neon(e.agent), live: true,
+      text: `received a question in ${e.channel}`,
+      time: new Date(e.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    });
+    feed.length = Math.min(feed.length, 6);
+    renderFeed();
+  }
+  async function pollActivity() {
+    try {
+      const r = await fetch(`api/activity?since=${lastEventId || 0}`, { cache: "no-store", credentials: "same-origin" });
+      if (!r.ok) throw new Error(r.status);
+      const data = await r.json();
+      if (lastEventId === null) lastEventId = data.last;      // first poll: skip old events
+      else data.events.forEach((e) => { onLiveEvent(e); lastEventId = Math.max(lastEventId, e.id); });
+      setTimeout(pollActivity, 3000);
+    } catch {
+      setTimeout(pollActivity, 15000);                       // server not reachable (e.g. opened as a file)
+    }
+  }
+
   function updatePerson(p, dt) {
     if (p.wait > 0) {
       p.walking = false;
       p.wait -= dt;
-      if (p.wait <= 0 && p.task) { logTask(p); p.task = null; }
+      if (p.wait <= 0 && p.task) { if (!p.live) logTask(p); p.task = null; p.live = false; }
       return;
     }
     const next = p.route[(p.idx + 1) % p.route.length];
@@ -640,8 +684,36 @@
     return [iso(i, j + d), iso(i + w, j + d), iso(i + w, j), iso(i + w, j, h), iso(i, j, h), iso(i, j + d, h)];
   }
 
+  function drawVisitor(v) {
+    const age = time - v.born, col = neon(v.agent);
+    const a = Math.min(1, age / 0.6, (v.life - age) / 0.8);
+    if (a <= 0) return;
+    const g = iso(v.i, v.j), x = g.x, y = g.y;
+    ctx.save(); ctx.globalAlpha = a;
+    // light beam
+    const beam = ctx.createLinearGradient(x, y - 90, x, y);
+    beam.addColorStop(0, rgba(col, 0)); beam.addColorStop(1, rgba(col, 0.35));
+    ctx.fillStyle = beam; ctx.fillRect(x - 6, y - 90, 12, 90);
+    ctx.shadowColor = col; ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.ellipse(x, y, 9 + Math.sin(time * 6) * 1.5, 4, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
+    // hologram figure
+    ctx.fillStyle = rgba("#E8F6FF", 0.75);
+    ctx.beginPath(); ctx.moveTo(x - 5, y - 20); ctx.lineTo(x + 5, y - 20); ctx.lineTo(x + 3.4, y - 2); ctx.lineTo(x - 3.4, y - 2); ctx.closePath(); ctx.fill();
+    circle(x, y - 24, 3.8, rgba("#E8F6FF", 0.8));
+    ctx.restore();
+  }
+  function drawLivePulse(b) {
+    const until = liveUntil[b.agent];
+    if (!until || until < time) return;
+    const k = 0.5 + 0.5 * Math.sin(time * 8);
+    const pts = b.kind === "plot" ? null : silhouette({ ...b, hitH: b.kind === "burjuman" ? b.h + 16 : b.h + (b.kind === "hospital" ? 4 : 0) });
+    if (pts) outline(pts, rgba(neon(b.agent), 0.4 + 0.6 * k), 2.5, 22);
+  }
+
   function drawBuilding(b) {
     ({ hospital: drawHospital, tower: drawTower, burjuman: drawBurjuman, finance: drawFinance, house: drawHouse, plot: drawPlot })[b.kind](b);
+    if (b.agent) drawLivePulse(b);
     if (hover && hover.b === b && b.kind !== "burjuman") {
       const { i, j, w, d } = b;
       const pts = b.kind === "plot"
@@ -715,6 +787,25 @@
     });
   }
 
+  function drawVisitorBubbles() {
+    visitors.forEach((v) => {
+      const age = time - v.born;
+      if (age < 0.4 || age > v.life - 0.6) return;
+      const col = neon(v.agent), head = toScreen(iso(v.i, v.j, 34));
+      const text = `New question from ${v.channel}`;
+      ctx.font = `600 12px ${FONT}`;
+      const bw = ctx.measureText(text).width + 56, bh = 26, bx = head.x - bw / 2, by = head.y - bh - 8;
+      glassPill(bx, by, bw, bh, 8, col, false);
+      ctx.save(); ctx.shadowColor = "#FF2E63"; ctx.shadowBlur = 8; ctx.fillStyle = "#FF2E63";
+      rrect(bx + 8, by + 6, 34, 14, 4); ctx.fill(); ctx.restore();
+      ctx.fillStyle = "#fff"; ctx.font = `700 10px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("LIVE", bx + 25, by + 13.5);
+      ctx.fillStyle = C.ink; ctx.font = `600 12px ${FONT}`; ctx.textAlign = "left";
+      ctx.fillText(text, bx + 48, by + 13.5);
+      ctx.textBaseline = "alphabetic";
+    });
+  }
+
   function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
@@ -724,11 +815,13 @@
     buildings.forEach((b) => items.push({ k: b.i + b.j + (b.w + b.d) / 2, fn: () => drawBuilding(b) }));
     trees.forEach((t) => items.push({ k: t.i + t.j, fn: () => drawTree(t) }));
     people.forEach((p) => items.push({ k: p.i + p.j, fn: () => drawPerson(p) }));
+    visitors.forEach((v) => items.push({ k: v.i + v.j, fn: () => drawVisitor(v) }));
     cars.forEach((c) => { const [i, j] = carPos(c); items.push({ k: i + j + 0.2, fn: () => drawCar(c) }); });
     items.sort((a, b) => a.k - b.k).forEach((it) => it.fn());
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawLabels();
     drawBubbles();
+    drawVisitorBubbles();
   }
 
   // ---------- activity feed & counters ----------
@@ -757,7 +850,11 @@
       const span = document.createElement("span");
       const who = document.createElement("span");
       who.className = "who"; who.style.setProperty("--c", f.color); who.textContent = f.name;
-      span.append(who, ` finished ${lcFirst(f.task)}`);
+      if (f.live) {
+        const tag = document.createElement("span"); tag.className = "live"; tag.textContent = "LIVE";
+        span.append(tag, who, ` ${f.text}`);
+        li.classList.add("is-live");
+      } else span.append(who, ` finished ${lcFirst(f.task)}`);
       const t = document.createElement("time"); t.textContent = f.time;
       li.append(span, t);
       ul.append(li);
@@ -864,6 +961,7 @@
     last = now; time += dt;
     people.forEach((p) => updatePerson(p, dt));
     cars.forEach((c) => updateCar(c, dt));
+    for (let k = visitors.length - 1; k >= 0; k--) if (time - visitors[k].born > visitors[k].life) visitors.splice(k, 1);
     draw();
     requestAnimationFrame(frame);
   }
@@ -872,4 +970,6 @@
   renderFeed();
   resize();
   requestAnimationFrame(frame);
+  pollActivity();
+  window.agentCityTestEvent = (agent, channel = "Teams") => onLiveEvent({ agent, channel, at: Date.now() }); // for demos
 })();

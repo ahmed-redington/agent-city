@@ -101,3 +101,12 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-
   .panel { top: auto; left: 12px; right: 12px; bottom: 12px; width: auto; max-height: 70vh; transform: translateY(24px); }
 }
 @media (prefers-reduced-motion: reduce) { .panel { transition: none; } }
+
+.feed .live {
+  display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px;
+  background: #FF2E63; color: #fff; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em;
+  box-shadow: 0 0 8px #FF2E63; vertical-align: 1px;
+}
+.feed li.is-live { animation: liveIn 1.2s ease-out; }
+@keyframes liveIn { from { background: rgba(255, 46, 99, 0.18); } to { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .feed li.is-live { animation: none; } }
