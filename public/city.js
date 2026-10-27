@@ -4,7 +4,7 @@
   const canvas = document.getElementById("city");
   const ctx = canvas.getContext("2d");
 
-  const N = 14, TW = 64, TH = 32, SPEED = 1.1;
+  const N = 18, TW = 64, TH = 32, SPEED = 1.1;
   const FONT = '"Space Grotesk", system-ui, sans-serif';
   const C = {
     tile1: "#151B32", tile2: "#12182C", grid: "rgba(34, 230, 255, 0.08)",
@@ -13,7 +13,11 @@
     ink: "#E8EDFF", muted: "#8F9AC0"
   };
   // Neon colour per agent (falls back to the colour in config.js)
-  const NEON = { hospital: "#22E6FF", tower: "#FF3DCB", cloudascent: "#FF4D6D", plot: "#FFB020" };
+  const NEON = {
+    hospital: "#22E6FF", tower: "#FF3DCB", cloudascent: "#FF4D6D", plot: "#FFB020",
+    finance_analyst: "#7CFF6B", financial_planning: "#9D7BFF", ap_control: "#3DFFB8",
+    finance_insights: "#4DA6FF", collections: "#FF8A3D", expense_compliance: "#FFD84D"
+  };
   const neon = (id) => NEON[id] || (CFG.agents[id] && CFG.agents[id].color) || C.cyan;
   const rgba = (hex, a) => {
     const n = parseInt(hex.slice(1), 16);
@@ -92,16 +96,26 @@
     { kind: "tower", agent: "tower", i: 8, j: 2, w: 3, d: 3, h: 170, hitH: 184, labelZ: 222 },
     { kind: "burjuman", agent: "cloudascent", i: 12, j: 2, w: 2, d: 2, h: 230, hitH: 262, labelZ: 300 },
     { kind: "plot", agent: "plot", i: 1, j: 8, w: 4, d: 4, h: 0, hitH: 130, labelZ: 158 },
-    { kind: "house", i: 8, j: 8, w: 2, d: 2, h: 28 },
-    { kind: "house", i: 11, j: 8, w: 2, d: 2, h: 28 }
+    // ---------- Finance District: tall back row, lower front row along Finance Avenue ----------
+    { kind: "finance", style: "ring", agent: "finance_analyst", i: 7.5, j: 7.3, w: 2.4, d: 2.2, h: 112, hitH: 150, labelZ: 160, compact: true },
+    { kind: "finance", style: "steps", agent: "financial_planning", i: 10.6, j: 7.3, w: 2.4, d: 2.2, h: 104, hitH: 142, labelZ: 152, compact: true },
+    { kind: "finance", style: "vault", agent: "ap_control", i: 13.7, j: 7.3, w: 2.4, d: 2.2, h: 92, hitH: 130, labelZ: 140, compact: true },
+    { kind: "finance", style: "bars", agent: "finance_insights", i: 7.5, j: 10.2, w: 2.4, d: 1.8, h: 44, hitH: 82, labelZ: 92, compact: true },
+    { kind: "finance", style: "coins", agent: "collections", i: 10.6, j: 10.2, w: 2.4, d: 1.8, h: 50, hitH: 88, labelZ: 98, compact: true },
+    { kind: "finance", style: "check", agent: "expense_compliance", i: 13.7, j: 10.2, w: 2.4, d: 1.8, h: 40, hitH: 78, labelZ: 88, compact: true },
+    { kind: "house", i: 1, j: 14, w: 2, d: 2, h: 28 },
+    { kind: "house", i: 3.5, j: 14, w: 2, d: 2, h: 28 }
   ];
-  const trees = [[12.5, 1.5], [0.5, 13.5], [12.5, 13.2], [13.5, 12], [7.5, 12.5],
-    [5.5, 13.3], [0.5, 0.5], [3.5, 0.6], [13.4, 8.5], [9.5, 13.3], [0.6, 7.4]].map(([i, j]) => ({ i, j }));
+  const trees = [[12.5, 1.5], [0.5, 0.5], [3.5, 0.6], [15.5, 1.5], [16.5, 3.5], [17.3, 5.2],
+    [0.6, 7.4], [0.5, 13.2], [0.5, 17.3], [3, 17.4], [5.5, 17.4], [17.2, 8.2], [17.2, 10.8],
+    [8, 15.2], [10.5, 16.4], [13, 15.2], [15.5, 16.4], [17.2, 15], [9, 17.4], [12, 17.4], [16.8, 17.3]].map(([i, j]) => ({ i, j }));
 
   const inRect = (i, j, x, y, w, d) => i >= x && i < x + w && j >= y && j < y + d;
   function tileColor(i, j) {
     if (i === 6 || j === 6) return C.road;
-    if (j === 10 && i >= 7 && i <= 12) return C.path;
+    if (j === 13 && i >= 7) return C.road;                    // Finance Avenue
+    if (j === 12 && i >= 7 && i <= 16) return C.path;
+    if (j === 16 && i >= 1 && i <= 5) return C.path;
     if (j === 5 && ((i >= 1 && i <= 4) || (i >= 8 && i <= 10))) return C.path;
     if ((j === 4 || j === 5) && (i === 12 || i === 13)) return C.path;
     if (inRect(i, j, 1, 8, 4, 4)) return C.dirt;
@@ -127,13 +141,25 @@
       { p: [9, 5.3], task: "Handing off a relocation request" }, { p: [9, 6.5] }, { p: [2, 6.5] }
     ]),
     person("Omar", "tower", { skin: "#A86D4A", hair: "#1C1410" }, [
-      { p: [9.5, 5.3], task: "Preparing a new listing" }, { p: [9.5, 6.5] }, { p: [6.5, 6.5] }, { p: [6.5, 10.5] },
-      { p: [9, 10.5], task: "Showing a property" }, { p: [12, 10.5], task: "Measuring the living room" },
-      { p: [6.5, 10.5] }, { p: [6.5, 6.5] }, { p: [9.5, 6.5] }
+      { p: [9.5, 5.3], task: "Preparing a new listing" }, { p: [9.5, 6.5] }, { p: [6.5, 6.5] }, { p: [6.5, 16.5] },
+      { p: [4.5, 16.4], task: "Showing a property" }, { p: [2, 16.4], task: "Measuring the living room" },
+      { p: [6.5, 16.5] }, { p: [6.5, 6.5] }, { p: [9.5, 6.5] }
     ]),
     person("Lina", "tower", { skin: "#E7B891", hair: "#3B2417" }, [
       { p: [10.3, 5.3], task: "Drafting a lease" }, { p: [10.3, 6.5] },
       { p: [13.5, 6.5], task: "Answering a buyer's question" }, { p: [10.3, 6.5] }
+    ]),
+    person("Zara", "finance_insights", { skin: "#D9A07A", hair: "#2A1A12" }, [
+      { p: [8.7, 12.4], task: "Building a variance report" }, { p: [8.7, 13.5] }, { p: [6.5, 13.5] },
+      { p: [6.5, 9.5], task: "Pulling month-end figures" }, { p: [6.5, 13.5] }, { p: [8.7, 13.5] }
+    ]),
+    person("Maya", "collections", { skin: "#8D5A3B", hair: "#141010" }, [
+      { p: [11.8, 12.4], task: "Chasing an overdue invoice" }, { p: [11.8, 13.5] },
+      { p: [16.5, 13.5], task: "Sending a payment reminder" }, { p: [11.8, 13.5] }
+    ]),
+    person("Ravi", "expense_compliance", { skin: "#B07A55", hair: "#1E1611" }, [
+      { p: [14.9, 12.4], task: "Reviewing an expense claim" }, { p: [14.9, 13.5] }, { p: [10, 13.5] },
+      { p: [10, 14.4], task: "Flagging a policy exception" }, { p: [10, 13.5] }, { p: [14.9, 13.5] }
     ])
   ];
   people.forEach((p) => (p.waitTotal = p.wait));
@@ -193,12 +219,15 @@
       line(iso(6, a), iso(6, b), rgba(C.magenta, 0.45), 1);
       line(iso(7, a), iso(7, b), rgba(C.magenta, 0.45), 1);
     }
+    line(iso(7, 13), iso(N, 13), rgba("#9D7BFF", 0.45), 1);   // Finance Avenue edges
+    line(iso(7, 14), iso(N, 14), rgba("#9D7BFF", 0.45), 1);
     const o = (time * 0.8) % 1;
     for (let k = -1; k < N; k++) {
       const s = k + o, e = s + 0.35;
       if (s < 0 || e > N || (e > 6 && s < 7)) continue;
       glowLine(iso(s, 6.5), iso(e, 6.5), C.cyan, 1.6, 8);
       glowLine(iso(6.5, s), iso(6.5, e), C.magenta, 1.6, 8);
+      if (s >= 7) glowLine(iso(s, 13.5), iso(e, 13.5), "#9D7BFF", 1.6, 8);
     }
   }
 
@@ -380,6 +409,98 @@
     }
   }
 
+  // ---------- Finance District buildings ----------
+  const FIN_WALL = ["#1C1F38", "#14162A", "#252A4A"];
+  function finWindows(f, col, rows, cols, seed) {
+    const tick = Math.floor(time * 0.7);
+    const vh = (0.8 / rows) * 0.55, uw = (0.8 / cols) * 0.6;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const v0 = 0.12 + (r * 0.8) / rows, u0 = 0.1 + (c * 0.8) / cols;
+      const hs = (r * 7 + c * 13 + seed * 5 + tick * 3) % 9;
+      if (hs < 3) glowQuad(f.L, u0, v0, u0 + uw, v0 + vh, rgba(col, 0.85), 6);
+      else quad(f.L, u0, v0, u0 + uw, v0 + vh, "#262A4A");
+      if (hs > 6) glowQuad(f.R, u0, v0, u0 + uw, v0 + vh, rgba(col, 0.7), 6);
+      else quad(f.R, u0, v0, u0 + uw, v0 + vh, "#1E2140");
+    }
+  }
+  function drawFinance(b) {
+    const { i, j, w, d, h } = b;
+    const col = neon(b.agent), seed = Math.round(b.i * 3 + b.j);
+    let f;
+    if (b.style === "steps") {
+      // stepped spire: three tiers
+      [[0, 0.5, 0], [0.5, 0.3, 0.3], [0.8, 0.2, 0.6]].forEach(([z0, hh, inset]) => {
+        f = drawBox(i + inset, j + inset, w - inset * 2, d - inset * 2, h * z0, h * hh, ...FIN_WALL);
+        finWindows(f, col, Math.max(2, Math.round((hh * h) / 14)), 3, seed);
+        outline(f.top, rgba(col, 0.8), 1.1, 8);
+      });
+    } else {
+      f = drawBox(i, j, w, d, 0, h, ...FIN_WALL);
+      finWindows(f, col, Math.max(3, Math.round(h / 14)), 4, seed);
+      outline(f.top, rgba(col, 0.8), 1.1, 8);
+      glowLine(iso(i + w, j + d, 0), iso(i + w, j + d, h), col, 1.4, 12);
+    }
+    // entrance on the front face
+    const base = boxFaces(i, j, w, d, 0, h);
+    quad(base.L, 0.4, 0, 0.6, 12 / h, "#090C18");
+    glowLine(base.L(0.4, 12 / h), base.L(0.6, 12 / h), col, 1.3, 10);
+    // turning vault wheel on the side of the AP building
+    if (b.style === "vault") {
+      const p0 = f.R(0.25, 0.85), pu = f.R(0.75, 0.85), pv = f.R(0.25, 0.55);
+      ctx.save();
+      ctx.transform(pu.x - p0.x, pu.y - p0.y, pv.x - p0.x, pv.y - p0.y, p0.x, p0.y);
+      ctx.shadowColor = col; ctx.shadowBlur = 10; ctx.strokeStyle = col; ctx.lineWidth = 0.05;
+      ctx.beginPath(); ctx.arc(0.5, 0.5, 0.45, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0.5, 0.5, 0.12, 0, Math.PI * 2); ctx.stroke();
+      for (let k = 0; k < 4; k++) {
+        const a = time * 0.8 + (k * Math.PI) / 2;
+        ctx.beginPath(); ctx.moveTo(0.5 + Math.cos(a) * 0.12, 0.5 + Math.sin(a) * 0.12);
+        ctx.lineTo(0.5 + Math.cos(a) * 0.38, 0.5 + Math.sin(a) * 0.38); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // hologram floating above the roof
+    const roof = iso(i + w / 2, j + d / 2, h);
+    const c = iso(i + w / 2, j + d / 2, h + 22 + Math.sin(time * 2 + seed) * 2);
+    line(roof, c, rgba(col, 0.35), 1);
+    ctx.save();
+    ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.strokeStyle = col; ctx.fillStyle = rgba(col, 0.25); ctx.lineWidth = 1.4;
+    ctx.lineJoin = "round"; ctx.lineCap = "round";
+    if (b.style === "ring") {            // spinning coin with $
+      ctx.beginPath(); ctx.ellipse(c.x, c.y + 6, 20, 7, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(c.x, c.y - 6, Math.abs(Math.cos(time)) * 13 + 2, 13, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = col; ctx.font = `700 15px ${FONT}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("$", c.x, c.y - 6);
+    } else if (b.style === "steps") {    // rising forecast line
+      const pts = [[-18, 8], [-9, 2], [0, 5], [9, -6], [18, -16]].map(([x, y]) => ({ x: c.x + x, y: c.y + y }));
+      ctx.beginPath(); pts.forEach((p, k) => (k ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y))); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pts[4].x - 6, pts[4].y + 1); ctx.lineTo(pts[4].x, pts[4].y); ctx.lineTo(pts[4].x - 1, pts[4].y + 6); ctx.stroke();
+      const t = (time * 0.35) % 1, seg = Math.min(3, Math.floor(t * 4)), lt = t * 4 - seg;
+      circle(pts[seg].x + (pts[seg + 1].x - pts[seg].x) * lt, pts[seg].y + (pts[seg + 1].y - pts[seg].y) * lt, 2.4, col);
+    } else if (b.style === "vault") {    // padlock
+      ctx.beginPath(); ctx.ellipse(c.x, c.y + 4, 14, 5, 0, 0, Math.PI * 2); ctx.stroke();
+      rrect(c.x - 8, c.y - 8, 16, 12, 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(c.x, c.y - 8, 5, Math.PI, 0); ctx.stroke();
+    } else if (b.style === "coins") {    // coin stack + spinning coin
+      for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.ellipse(c.x - 6, c.y + 8 - k * 4, 9, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      const spin = Math.abs(Math.cos(time * 2)) * 8 + 1, cy = c.y - 6 + Math.sin(time * 3) * 2;
+      ctx.beginPath(); ctx.ellipse(c.x + 10, cy, spin, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    } else if (b.style === "bars") {     // live bar chart
+      for (let k = 0; k < 4; k++) {
+        const bh = 8 + 7 * (1 + Math.sin(time * 1.8 + k * 1.3));
+        ctx.beginPath(); ctx.rect(c.x - 16 + k * 9, c.y + 10 - bh, 6, bh); ctx.fill(); ctx.stroke();
+      }
+    } else if (b.style === "check") {    // shield with tick
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y - 14); ctx.lineTo(c.x + 11, c.y - 9); ctx.lineTo(c.x + 9, c.y + 4);
+      ctx.lineTo(c.x, c.y + 11); ctx.lineTo(c.x - 9, c.y + 4); ctx.lineTo(c.x - 11, c.y - 9); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(c.x - 5, c.y - 1); ctx.lineTo(c.x - 1, c.y + 3); ctx.lineTo(c.x + 6, c.y - 5); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+
   function drawHouse(b) {
     const { i, j, w, d, h } = b;
     const f = drawBox(i, j, w, d, 0, h, "#1F2338", "#171A2C", "#262B44");
@@ -520,7 +641,7 @@
   }
 
   function drawBuilding(b) {
-    ({ hospital: drawHospital, tower: drawTower, burjuman: drawBurjuman, house: drawHouse, plot: drawPlot })[b.kind](b);
+    ({ hospital: drawHospital, tower: drawTower, burjuman: drawBurjuman, finance: drawFinance, house: drawHouse, plot: drawPlot })[b.kind](b);
     if (hover && hover.b === b && b.kind !== "burjuman") {
       const { i, j, w, d } = b;
       const pts = b.kind === "plot"
@@ -540,7 +661,9 @@
     ctx.restore();
   }
   function drawLabels() {
-    buildings.filter((b) => b.agent).forEach((b) => {
+    const list = buildings.filter((b) => b.agent);
+    list.sort((x, y) => (hover && hover.agent === x.agent) - (hover && hover.agent === y.agent));
+    list.forEach((b) => {
       const a = CFG.agents[b.agent], col = neon(b.agent);
       const p = toScreen(iso(b.i + b.w / 2, b.j + b.d / 2, b.labelZ));
       const hot = hover && hover.agent === b.agent;
@@ -548,13 +671,15 @@
       const tw = ctx.measureText(a.label.toUpperCase()).width;
       ctx.font = `400 11px ${FONT}`;
       const sw = ctx.measureText(a.place).width;
-      const bw = Math.max(tw, sw) + 26, bh = 40, bx = p.x - bw / 2, by = p.y - bh - 6;
+      const small = b.compact && !hot;
+      const bw = (small ? tw : Math.max(tw, sw)) + 22, bh = small ? 24 : 40, bx = p.x - bw / 2, by = p.y - bh - 6;
       glassPill(bx, by, bw, bh, 8, col, hot);
       ctx.beginPath(); ctx.moveTo(p.x - 5, by + bh); ctx.lineTo(p.x + 5, by + bh); ctx.lineTo(p.x, by + bh + 6); ctx.closePath();
       ctx.fillStyle = col; ctx.fill();
       ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
       ctx.fillStyle = hot ? "#0A0E1E" : C.ink; ctx.font = `600 13px ${FONT}`;
-      ctx.fillText(a.label.toUpperCase(), p.x, by + 18);
+      ctx.fillText(a.label.toUpperCase(), p.x, by + (small ? 16.5 : 18));
+      if (small) return;
       ctx.fillStyle = hot ? "rgba(10, 14, 30, 0.75)" : C.muted; ctx.font = `400 11px ${FONT}`;
       ctx.fillText(a.place, p.x, by + 32);
     });
