@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <clipPath id="r"><rect width="64" height="64" rx="14"/></clipPath>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0A0B26"/>
+      <stop offset="0.42" stop-color="#3B1A57"/>
+      <stop offset="0.66" stop-color="#B4405E"/>
+      <stop offset="0.8" stop-color="#FF8A4C"/>
+    </linearGradient>
+    <radialGradient id="sun">
+      <stop offset="0" stop-color="#FFF6DE"/>
+      <stop offset="0.65" stop-color="#FFD08A"/>
+      <stop offset="1" stop-color="#FF9A5A"/>
+    </radialGradient>
+    <radialGradient id="halo">
+      <stop offset="0" stop-color="#FFB070" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#FF7A5A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4A1E3E"/>
+      <stop offset="1" stop-color="#120A18"/>
+    </linearGradient>
+    <linearGradient id="plaza" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A3440"/>
+      <stop offset="1" stop-color="#16141C"/>
+    </linearGradient>
+    <linearGradient id="lit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D9976F"/>
+      <stop offset="1" stop-color="#4A3238"/>
+    </linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#262B3C"/>
+      <stop offset="1" stop-color="#0D1018"/>
+    </linearGradient>
+    <filter id="glow" filterUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <feGaussianBlur stdDeviation="1.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="64" height="64" fill="url(#sky)"/>
+    <circle cx="47" cy="40" r="22" fill="url(#halo)"/>
+    <circle cx="47" cy="40" r="10" fill="url(#sun)"/>
+    <!-- distant skyline -->
+    <path d="M3 52V24h4v-5h2v5h3v28zM12 52V33h5v19zM53 52V29h3l1-6 1 6h3v23z" fill="#2A1640"/>
+    <g fill="#FFC98A" opacity="0.8">
+      <rect x="5" y="28" width="1.2" height="1"/><rect x="8.5" y="33" width="1.2" height="1"/>
+      <rect x="5" y="39" width="1.2" height="1"/><rect x="55" y="34" width="1.2" height="1"/>
+      <rect x="58" y="41" width="1.2" height="1"/>
+    </g>
+    <!-- city sprawl below the horizon -->
+    <rect y="51" width="64" height="13" fill="url(#floor)"/>
+    <g fill="#FFB070" opacity="0.7">
+      <rect x="3" y="57" width="1" height="0.8"/><rect x="8" y="60" width="1" height="0.8"/>
+      <rect x="54" y="56" width="1" height="0.8"/><rect x="58" y="60" width="1" height="0.8"/>
+    </g>
+    <!-- plaza -->
+    <path d="M5 51 28 39.5 51 51 28 62.5z" fill="url(#plaza)"/>
+    <path d="M28 62.5v4L5 55v-4z" fill="#0C0B12"/>
+    <path d="M28 62.5v4L51 55v-4z" fill="#2A1E22"/>
+    <path d="M5 51 28 62.5" stroke="#22E6FF" stroke-width="1.4" filter="url(#glow)"/>
+    <path d="M28 62.5 51 51" stroke="#FFB27A" stroke-width="1.4" filter="url(#glow)"/>
+    <!-- tower -->
+    <path d="M17 18.5 28 24v32l-11-5.5z" fill="url(#shade)"/>
+    <path d="M28 24 39 18.5v32L28 56z" fill="url(#lit)"/>
+    <path d="M17 18.5 28 24 28 6z" fill="#262A3A"/>
+    <path d="M28 24 39 18.5 28 6z" fill="#E6AA82"/>
+    <path d="M39 18.5 28 6" stroke="#FFD2A8" stroke-width="0.8"/>
+    <path d="M39 18.5v32" stroke="#FFB27A" stroke-width="0.8" opacity="0.8"/>
+    <!-- lit windows -->
+    <g fill="#FFC98A">
+      <path d="M30.5 28l3-1.5v2.6l-3 1.5zM35 25.8l2.5-1.25v2.6L35 28.4z"/>
+      <path d="M30.5 34l3-1.5v2.6l-3 1.5zM35 31.8l2.5-1.25v2.6L35 34.4z"/>
+      <path d="M30.5 46l3-1.5v2.6l-3 1.5zM35 43.8l2.5-1.25v2.6L35 46.4z"/>
+    </g>
+    <path d="M30.5 40l3-1.5v2.6l-3 1.5z" fill="#FF3DCB" filter="url(#glow)"/>
+    <path d="M35 37.8l2.5-1.25v2.6L35 40.4z" fill="#FFC98A"/>
+    <g fill="#22E6FF" filter="url(#glow)">
+      <path d="M19.5 26.2l3 1.5v2.4l-3-1.5zM19.5 38.2l3 1.5v2.4l-3-1.5z"/>
+    </g>
+    <!-- glowing corner light strip and beacon -->
+    <path d="M28 24v32" stroke="#22E6FF" stroke-width="1.6" filter="url(#glow)"/>
+    <path d="M28 6V2.5" stroke="#8A8090" stroke-width="1"/>
+    <circle cx="28" cy="2.6" r="1.7" fill="#FF4650" filter="url(#glow)"/>
+  </g>
+</svg>
